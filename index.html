@@ -81,6 +81,7 @@ label{font-size:11px;color:var(--mut);text-transform:uppercase;letter-spacing:.1
 .nm{display:flex;align-items:center;gap:10px;min-width:0}.nm img{width:46px;height:46px;border-radius:10px;object-fit:cover;flex:none}.card h3{font-size:21px}.gm{display:flex;flex-wrap:wrap;gap:6px;font-size:12px;color:var(--mut);margin-bottom:10px;align-items:center}.gm span{background:var(--panel2);padding:3px 9px;border-radius:99px}.mini{margin-left:auto;padding:3px 10px;font-size:12px;border-radius:99px}
 .badge{font:600 11px var(--body);letter-spacing:.1em;border:1px solid var(--line);border-radius:99px;padding:3px 10px;color:var(--mut)}.ro .actions,.ro .mini,.ro #drawer,.ro #veil{display:none!important}.incs{grid-template-columns:repeat(5,1fr)!important}.incs .btn{padding:10px 2px;font-size:13px}
 .dlg{position:fixed;inset:0;display:none;place-items:center;background:rgba(0,0,0,.65);z-index:50;padding:16px}.dlg.on{display:grid}.dbox{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:20px;width:min(400px,100%);display:grid;gap:12px}.dbox h2{font-size:22px;letter-spacing:.04em}
+.ros li{align-items:center}.ros .mini{margin-left:6px}
 </style>
 </head>
 <body>
@@ -120,7 +121,7 @@ label{font-size:11px;color:var(--mut);text-transform:uppercase;letter-spacing:.1
   <div><label>Gender (for the 4 female / 7 male rule)</label><div class="two"><button class="btn" id="gF">♀ Female</button><button class="btn" id="gM">♂ Male</button></div></div>
   <div><label for="tm">Winning team</label><select id="tm"></select></div>
   <div class="price" id="priceTxt">$0</div>
-  <input id="price" type="number" min="10000" step="5000" inputmode="numeric" aria-label="Price">
+  <input id="price" type="number" min="0" step="any" inputmode="numeric" aria-label="Price">
   <div class="incs"><button class="btn pri" id="stepB">▲ Step</button><button class="btn" data-i="10000">+10k</button><button class="btn" data-i="50000">+50k</button><button class="btn" data-i="100000">+1L</button><button class="btn" id="maxB">Max 3L</button></div>
   <button class="btn" id="toBase">Reset to base price</button>
   <div class="info" id="info"></div>
@@ -175,7 +176,7 @@ function render(){
       <div class="m"><div><span>Budget</span><b>${short(t.budget)}</b></div><div><span>Spent</span><b>${short(t.spent)}</b></div><div><span>Squad</span><b>${t.roster.length}/${SQUAD}</b></div></div><div class="gm"><span>♀ ${t.F}/${FEM}</span><span>♂ ${t.M}/${MAL}</span><span>${t.hasMax?'★ Max bid used':'☆ Max bid available'}</span><button class="btn mini" data-b="${t.id}">Budget</button></div>
       <div class="bar"><i style="width:${pct}%"></i></div><div class="pct"><span>Budget used</span><span>${pct}%</span></div>
       <details data-t="${t.id}"${open.has(t.id)?' open':''}><summary>Squad (${t.roster.length})</summary>
-      ${t.roster.length?`<ul class="ros">${t.roster.map(r=>`<li><span>${esc(r.p.name)} <small style="color:var(--mut)">${r.p.age}${r.p.g?' · '+r.p.g:''}</small></span><em>${full(r.price)}</em></li>`).join('')}</ul>`:'<div class="empty">No players yet.</div>'}</details></div>`}).join('');
+      ${t.roster.length?`<ul class="ros">${t.roster.map(r=>`<li><span>${esc(r.p.name)} <small style="color:var(--mut)">${r.p.age}${r.p.g?' · '+r.p.g:''}</small></span><em>${full(r.price)}</em><button class="btn mini ed" data-e="${r.p.id}">Edit</button></li>`).join('')}</ul>`:'<div class="empty">No players yet.</div>'}</details></div>`}).join('');
   flashT=null;
   // team filter options
   const cur=team;$('#ft').innerHTML='<option value="all">All teams</option>'+S.teams.map(t=>`<option value="${t.id}">${esc(t.name)}</option>`).join('');$('#ft').value=cur;
@@ -227,7 +228,6 @@ function check(){
   }
   if(!err&&v>MAXBID)bad(`Max bid is ${full(MAXBID)}`);
   else if(!err&&p&&v<p.base&&v>0)bad(`Below base price (${full(p.base)})`);
-  else if(!err&&v>0&&!ladder.includes(v))bad('Bid must follow the ladder: 5K steps to 1L, 10K to 2L, 20K to 3L');
   if(!err&&p&&!p.g)msg='⚠ Gender not set: tag it so the 4F/7M rule is checked';
   $('#info').textContent=msg;$('#info').className='info'+(err?' err':'');
   return !err&&!!p&&!!t&&v>0;
@@ -238,7 +238,7 @@ function closeDrawer(){$('#drawer').classList.remove('on');$('#veil').classList.
 function dlg(title,fields,ok){
   return new Promise(res=>{
     $('#dT').textContent=title;
-    $('#dB').innerHTML=fields.map(f=>`<div><label>${esc(f.l)}</label>${f.opts?`<select data-k="${f.k}">${f.opts.map(o=>`<option value="${o[0]}">${o[1]}</option>`).join('')}</select>`:`<input data-k="${f.k}" type="${f.t||'text'}" value="${esc(f.v||'')}">`}</div>`).join('');
+    $('#dB').innerHTML=fields.map(f=>`<div><label>${esc(f.l)}</label>${f.opts?`<select data-k="${f.k}">${f.opts.map(o=>`<option value="${o[0]}"${o[0]===f.v?' selected':''}>${esc(o[1])}</option>`).join('')}</select>`:`<input data-k="${f.k}" type="${f.t||'text'}" value="${esc(f.v||'')}">`}</div>`).join('');
     $('#dOk').textContent=ok||'OK';
     const d=$('#dlg');d.classList.add('on');
     const done=v=>{d.classList.remove('on');$('#dOk').onclick=$('#dNo').onclick=null;res(v)};
@@ -246,6 +246,19 @@ function dlg(title,fields,ok){
     $('#dOk').onclick=()=>{const o={};d.querySelectorAll('[data-k]').forEach(e=>o[e.dataset.k]=e.value);done(o)};
     const x=d.querySelector('[data-k]');if(x)x.focus();
   });
+}
+function validEdit(pid,tid,g){
+  const {tm}=derive(),l=S.log.find(x=>x.pid===pid&&x.type==='sold'),t=tm[tid];
+  const o=t.roster.filter(r=>r.p.id!==pid);
+  const F=o.filter(r=>r.p.g==='F').length+(g==='F'?1:0),M=o.filter(r=>r.p.g==='M').length+(g==='M'?1:0);
+  const spent=o.reduce((a,r)=>a+r.price,0)+l.price,slots=SQUAD-o.length-1;
+  if(o.length>=SQUAD)return t.name+' squad is full (11)';
+  if(spent>t.budget)return t.name+' would be over budget';
+  if(t.budget-spent<slots*BASE)return t.name+' could not afford its remaining slots';
+  if(F>FEM)return t.name+' would have more than 4 females';
+  if(M>MAL)return t.name+' would have more than 7 males';
+  if(l.price>=MAXBID&&o.some(r=>r.price>=MAXBID))return t.name+' already used its max bid';
+  return '';
 }
 function toast(m){const t=$('#toast');t.textContent=m;t.classList.add('on');clearTimeout(toast.h);toast.h=setTimeout(()=>t.classList.remove('on'),2200)}
 function record(type){
@@ -259,7 +272,7 @@ function record(type){
 /* events */
 $('#openBid').onclick=openDrawer;$('#close').onclick=closeDrawer;$('#veil').onclick=closeDrawer;
 $('#pl').onchange=pick;$('#tm').onchange=check;$('#price').oninput=check;$('#ps').oninput=()=>{fillDrawer();pick()};
-document.querySelectorAll('[data-i]').forEach(b=>b.onclick=()=>setPrice(snapUp((+$('#price').value||0)+(+b.dataset.i))));
+document.querySelectorAll('[data-i]').forEach(b=>b.onclick=()=>setPrice(Math.min(MAXBID,(+$('#price').value||0)+(+b.dataset.i))));
 $('#toBase').onclick=pick;$('#sell').onclick=()=>record('sold');$('#pass').onclick=()=>record('unsold');
 $('#q').oninput=e=>{query=e.target.value;renderFeed()};
 $('#ft').onchange=e=>{team=e.target.value;renderFeed()};
@@ -267,6 +280,14 @@ $('#chips').onclick=e=>{const b=e.target.closest('.chip');if(!b)return;filter=b.
 $('#teams').addEventListener('toggle',e=>{const id=e.target.dataset&&e.target.dataset.t;if(!id)return;e.target.open?open.add(id):open.delete(id)},true);
 $('#undo').onclick=()=>{if(!S.log.length)return toast('Nothing to undo');const l=S.log.shift();save();render();toast('Undid: '+pName(l.pid))};
 $('#addP').onclick=async()=>{const r=await dlg('Add player',[{k:'n',l:'Name'},{k:'a',l:'Age',t:'number',v:'18'},{k:'g',l:'Gender',opts:[['M','Male'],['F','Female']]}],'Add');if(!r)return;const n=r.n.trim(),a=parseInt(r.a,10);if(!n)return toast('Name is required');if(!(a>=13))return toast('Minimum age is 13');S.players.push({id:'p'+Date.now(),name:n,age:a,g:r.g,base:BASE});save();render();toast(n+' added')};
+$('#teams').addEventListener('click',async e=>{
+  const b=e.target.closest('[data-e]');if(!b)return;
+  const pid=b.dataset.e,p=S.players.find(x=>x.id===pid),l=S.log.find(x=>x.pid===pid&&x.type==='sold');if(!p||!l)return;
+  const r=await dlg('Edit sold player: '+p.name,[{k:'g',l:'Gender',opts:[['M','Male'],['F','Female']],v:p.g},{k:'t',l:'Team',opts:S.teams.map(t=>[t.id,t.name]),v:l.tid}],'Save');
+  if(!r)return;
+  const m=validEdit(pid,r.t,r.g);if(m)return toast(m);
+  p.g=r.g;l.tid=r.t;flashT=r.t;save();render();toast(p.name+' updated');
+});
 $('#maxB').onclick=()=>setPrice(MAXBID);
 $('#stepB').onclick=()=>setPrice(stepUp(+$('#price').value||0));
 const setG=g=>{const p=S.players.find(p=>p.id===$('#pl').value);if(!p)return;p.g=g;save();render()};
